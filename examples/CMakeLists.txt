@@ -1,0 +1,2 @@
+add_subdirectory(simple_synchronous)
+add_subdirectory(synchronous)

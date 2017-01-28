@@ -1,0 +1,8 @@
+/.svn
+/build_VC11
+/build_VC9
+/*.*~
+/test/dexec/client/*.exe
+/sync.ffs_db
+/build
+/.vscode
