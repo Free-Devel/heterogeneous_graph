@@ -3,7 +3,6 @@
 #include <memory>
 #include <functional>
 #include "types.hpp"
-#include "ds_node.hpp"
 #include "environment.hpp"
 
 namespace heterogeneous_graph {

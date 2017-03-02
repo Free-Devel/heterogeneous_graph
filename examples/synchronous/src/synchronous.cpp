@@ -12,6 +12,8 @@
 namespace hg = heterogeneous_graph;
 namespace vk = hg::vertex_kind;
 
+using boost::timer::cpu_timer;
+
 const size_t n_workers = boost::thread::hardware_concurrency();
 
 struct info_job
@@ -19,63 +21,7 @@ struct info_job
    double start;
    double end;
    unsigned int n;
-
-   template <typename Archive>
-   inline void serialize(Archive &ar, const unsigned int version)
-   {
-      ar & boost::serialization::make_nvp("start", start);
-      ar & boost::serialization::make_nvp("end", end);
-      ar & boost::serialization::make_nvp("n", n);
-   }
 };
-
-hg::data_vector sin_integrator_start(const hg::data_vector &data, hg::environment &)
-{
-   return data;
-}
-
-struct sin_integrator
-{
-   sin_integrator(size_t id, size_t tot)
-   {
-      _id = id;
-      _tot = tot;
-   }
-
-   hg::data_vector operator()(const hg::data_vector &data, hg::environment &)
-   {
-      info_job ij_in = hg::unmarshall<info_job>(data);
-
-      double delta = (ij_in.end - ij_in.start) / _tot;
-      double start = ij_in.start + (_id * delta);
-      double end = start + delta;
-      unsigned int n = ij_in.n / _tot;
-
-      double t = (end - start) / n;
-      double integration = 0.0;
-      for(unsigned int i = 0; i < n; ++i)
-         integration += sin(start + (t * i)) * t;
-
-      return hg::marshall(integration);
-   }
-
-private:
-   size_t _id;
-   size_t _tot;
-};
-
-hg::data_vector sin_integrator_end(const hg::data_vector &data, hg::environment &)
-{
-   std::vector<double> ijv_in = hg::unmarshall_vector<double>(data);
-
-   double integration = 0;
-   for(size_t i = 0; i < ijv_in.size(); ++i)
-      integration += ijv_in[i];
-
-   return hg::marshall(integration);
-}
-
-using boost::timer::cpu_timer;
 
 int main()
 {
@@ -106,7 +52,7 @@ int main()
    // Inserimento dei vari task sui nodi di calcolo.
    hg::init_node<vk::synchronous>(
       start_node, 
-      std::move(&sin_integrator_start), 
+      [](const hg::data_vector &data, hg::environment &) { return data; }, 
       cg, 
       env,
       vk::broadcast
@@ -115,7 +61,22 @@ int main()
    for(size_t i = 0; i < n_workers; ++i) {
       hg::init_node<vk::synchronous>(
          start_node + i + 1,
-         std::move(sin_integrator(i, n_workers)),
+         [i](const hg::data_vector &data, hg::environment &)
+         {
+            info_job ij_in = hg::unmarshall<info_job>(data);
+
+            double delta = (ij_in.end - ij_in.start) / n_workers;
+            double start = ij_in.start + (i * delta);
+            double end = start + delta;
+            size_t n = ij_in.n / n_workers;
+
+            double t = (end - start) / n;
+            double integration = 0.0;
+            for(size_t x = 0; x < n; ++x)
+               integration += sin(start + (t * x)) * t;
+
+            return hg::marshall(integration);
+         },
          cg,
          env
       );
@@ -123,7 +84,16 @@ int main()
 
    hg::init_node<vk::synchronous>(
       end_node, 
-      std::move(&sin_integrator_end), 
+      [](const hg::data_vector &data, hg::environment &)
+      {
+         std::vector<double> ijv_in = hg::unmarshall_vector<double>(data);
+
+         double integration = 0;
+         for(size_t i = 0; i < ijv_in.size(); ++i)
+            integration += ijv_in[i];
+
+         return hg::marshall(integration);
+      }, 
       cg,
       env
    );
