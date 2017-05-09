@@ -4,9 +4,16 @@
 #include "types.hpp"
 #include "utility_stuff.hpp"
 #include "cpu_resource.hpp"
+#include "exception.hpp"
 
 namespace heterogeneous_graph {
 namespace vk = vertex_kind;
+
+void connect(size_t a, size_t b)
+{
+
+}
+
 
 /*void init_node(
    vertex_descriptor vertex,
@@ -89,6 +96,26 @@ vertex_descriptor begin(calculation_graph &cg)
 vertex_descriptor last(calculation_graph &cg)
 {
    return *(--(boost::vertices(cg).second));
+}
+
+timer::timer(
+): start(std::chrono::high_resolution_clock::now()),
+   ended(false)
+{
+}
+
+void timer::stop()
+{
+   end = std::chrono::high_resolution_clock::now();
+   ended = true;
+}
+
+std::chrono::duration<double> timer::elapsed()
+{
+   if(!ended)
+      stop();
+
+   return end - start;
 }
 
 } // namespace heterogeneous_graph

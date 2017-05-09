@@ -1,6 +1,7 @@
 //main.cpp
 #include <iostream>
-#include <chrono>
+#include <boost/make_shared.hpp>
+#include <boost/timer/timer.hpp>
 #include "environment.hpp"
 #include "calculation_graph.hpp"
 #include "utility_stuff.hpp"
@@ -11,7 +12,9 @@
 namespace hg = heterogeneous_graph;
 namespace vk = hg::vertex_kind;
 
-const size_t n_workers = std::thread::hardware_concurrency();
+using boost::timer::cpu_timer;
+
+const size_t n_workers = boost::thread::hardware_concurrency();
 
 struct info_job
 {
@@ -24,7 +27,10 @@ int main()
 {
    typedef std::pair<size_t, size_t> link_type;
 
-   hg::timer tmrA;
+   cpu_timer tmrP;
+   cpu_timer tmrA;
+
+   tmrA.start();
 
    // Creazione dell'ambiente di esecuzione.
    hg::environment env;
@@ -98,14 +104,14 @@ int main()
    ij.end = 3.1415;
    ij.n = 1000000000;
 
-   hg::timer tmrP;
+   tmrP.start();
    // Esecuzione del grafo di calcolo.
    double result = hg::run<info_job, double>(ij, cg, env);
    tmrP.stop();
    tmrA.stop();
 
-   std::cout << "result: " << result << " in elapsed time: " << tmrP.elapsed().count() << "sec.\n";
-   std::cout << "Global elapsed time: " << tmrA.elapsed().count() << "sec.\n" << std::endl;
+   std::cout << "result: " << result << " in elapsed time: " << tmrP.format(3LL, "%wsec.\n");
+   std::cout << "Global elapsed time: " << tmrA.format(3LL, "%wsec.\n") << std::endl;
 
    return 0;
 }

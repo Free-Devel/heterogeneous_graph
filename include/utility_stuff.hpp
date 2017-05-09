@@ -3,6 +3,7 @@
 #include <functional>
 #include <algorithm>
 #include <vector>
+#include <chrono>
 #include <boost/any.hpp>
 #include "types.hpp"
 #include "environment.hpp"
@@ -20,6 +21,7 @@ using std::placeholders::_1;
 data_type start_stuff(const data_vector &data);
 vertex_descriptor begin(calculation_graph &cg);
 vertex_descriptor last(calculation_graph &cg);
+void connect(size_t a, size_t b);
 
 template <typename KIND, typename F>
 void init_node(
@@ -164,5 +166,18 @@ std::vector<T> unmarshall_vector(const data_vector &data)
 
    return out;
 }
+
+class timer
+{
+public:
+   timer();
+   void stop();
+   std::chrono::duration<double> elapsed();
+
+private:
+   bool ended;
+   std::chrono::time_point<std::chrono::high_resolution_clock> start;
+   std::chrono::time_point<std::chrono::high_resolution_clock> end;
+};
 
 } // namespace heterogeneous_graph
